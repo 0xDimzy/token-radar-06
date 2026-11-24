@@ -1,0 +1,484 @@
+/* ==========================================================================
+   Token Radar dashboard stylesheet (v6)
+   --------------------------------------------------------------------------
+   Grouped by component: tokens, base, header, tabs, controls, tables,
+   indicators, chart strip, benchmark strip, method view, detail view,
+   footer. Dark page, amber accent — the board's own palette, not a
+   framework default.
+   ========================================================================== */
+
+/* ------------------------------------------------------------------
+   1. Design tokens — palette, surfaces, lines, text, accents.
+   ------------------------------------------------------------------ */
+:root {
+  --bg: #0d0f14;      /* page background */
+  --panel: #161a23;   /* card / header surface */
+  --panel2: #1c2230;  /* inset surface (inputs, hover, kv tiles) */
+  --line: #262e3f;    /* borders and row dividers */
+  --ink: #eceff4;     /* primary text */
+  --mut: #93a0b4;     /* secondary / muted text */
+  --acc: #f5a524;     /* accent — active tab, h1 suffix, chart bars */
+  --acc-dim: #b97e1a; /* accent at low emphasis */
+  --grn: #34d399;     /* positive change */
+  --red: #f87171;     /* negative change */
+  --amb: #fbbf24;     /* badge background */
+  --chip: #202839;    /* active tab / pill background */
+}
+
+/* ------------------------------------------------------------------
+   2. Base — box model and page body.
+   ------------------------------------------------------------------ */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ------------------------------------------------------------------
+   3. Header — title block on the left, stat cards on the right.
+   ------------------------------------------------------------------ */
+.top {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 22px 28px 12px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 30px;
+  letter-spacing: -.5px;
+}
+
+h1::after {
+  content: " — launch radar";
+  color: var(--acc);
+  font-size: 18px;
+}
+
+.sub {
+  margin: 6px 0 0;
+  color: var(--mut);
+  max-width: 640px;
+}
+
+/* Stat cards: one tile per figure, value over label. */
+.stats {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.stats div {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-width: 110px;
+}
+
+.stats b {
+  display: block;
+  font-size: 20px;
+}
+
+.stats span {
+  color: var(--mut);
+  font-size: 12px;
+}
+
+/* ------------------------------------------------------------------
+   4. View tabs — board / live tokens / method.
+   ------------------------------------------------------------------ */
+.tabs {
+  display: flex;
+  gap: 8px;
+  padding: 6px 28px 0;
+}
+
+.tab {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 9px 9px 0 0;
+  padding: 9px 16px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.tab.active {
+  background: var(--chip);
+  border-bottom-color: var(--acc);
+  color: #fff;
+}
+
+/* ------------------------------------------------------------------
+   5. Board controls — search, filters, watchlist toggle, count.
+   ------------------------------------------------------------------ */
+.controls {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding: 14px 28px;
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.controls input[type=search] {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 8px 12px;
+  min-width: 220px;
+}
+
+.controls select {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.watch {
+  color: var(--mut);
+  font-size: 14px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.count {
+  color: var(--mut);
+  font-size: 13px;
+  margin-left: auto;
+}
+
+/* ------------------------------------------------------------------
+   6. Tables — shared layout, sortable headers, row hover.
+   ------------------------------------------------------------------ */
+main {
+  padding: 0 28px 28px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 14px;
+}
+
+th,
+td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  color: var(--mut);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+td.num,
+th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+tbody tr {
+  cursor: pointer;
+}
+
+tbody tr:hover {
+  background: var(--panel2);
+}
+
+/* The board is long; keep its header visible while scrolling. */
+#board thead th {
+  position: sticky;
+  top: 0;
+  background: var(--bg);
+  z-index: 1;
+}
+
+/* The top three rows carry a faint accent tint. */
+tr.top3 {
+  background: rgba(245, 165, 36, 0.07);
+}
+
+/* ------------------------------------------------------------------
+   7. Indicators — change colours, badges, pills, hints.
+   ------------------------------------------------------------------ */
+.pos {
+  color: var(--grn);
+}
+
+.neg {
+  color: var(--red);
+}
+
+.badge {
+  display: inline-block;
+  background: var(--amb);
+  color: #111827;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.pill {
+  display: inline-block;
+  background: var(--chip);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 1px 8px;
+  margin: 1px 2px 1px 0;
+  font-size: 12px;
+}
+
+.hint {
+  color: var(--mut);
+  font-size: 13px;
+  margin: 12px 0;
+}
+
+/* ------------------------------------------------------------------
+   8. Chart strip — top-10 implied values as horizontal bars.
+   ------------------------------------------------------------------ */
+.chart-strip {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-top: 16px;
+}
+
+.chart-strip h2 {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 6px 0;
+  font-size: 13px;
+}
+
+.bar-rank {
+  width: 28px;
+  color: var(--mut);
+  font-variant-numeric: tabular-nums;
+}
+
+.bar-name {
+  width: 190px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar-track {
+  flex: 1;
+  height: 12px;
+  background: var(--panel2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--acc);
+  border-radius: 6px;
+}
+
+.bar-val {
+  width: 92px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* ------------------------------------------------------------------
+   9. Benchmark strip — category offsets shown above the board.
+   ------------------------------------------------------------------ */
+.bench-strip {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-top: 16px;
+}
+
+.bench-strip h2 {
+  margin: 0 0 4px;
+  font-size: 17px;
+}
+
+.bench-note {
+  margin: 0 0 6px;
+  color: var(--mut);
+  font-size: 13px;
+}
+
+.bench-strip table {
+  margin-top: 6px;
+}
+
+.bench-strip th {
+  cursor: default;
+}
+
+/* ------------------------------------------------------------------
+   10. Method view — steps list and benchmark table headings.
+   ------------------------------------------------------------------ */
+#view-method h2 {
+  font-size: 21px;
+  margin: 22px 0 6px;
+}
+
+#view-method h3 {
+  font-size: 16px;
+  margin: 20px 0 4px;
+}
+
+.method li {
+  margin: 8px 0;
+}
+
+.steps li {
+  margin: 8px 0;
+}
+
+/* ------------------------------------------------------------------
+   11. Detail view — card, key-value tiles, check banner, back btn.
+   ------------------------------------------------------------------ */
+.detail-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 22px;
+  margin-top: 16px;
+}
+
+/* The detail card is long; keep its rows tight so the whole farm
+   plan fits in one 1440-high frame. */
+.detail-card .steps li {
+  margin: 6px 0;
+}
+
+.detail-card .kv {
+  margin: 12px 0;
+}
+
+.factors th,
+.factors td {
+  padding: 7px 10px;
+}
+
+.detail-card h2 {
+  margin: 0 0 4px;
+  font-size: 24px;
+}
+
+.kv {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+
+.kv div {
+  background: var(--panel2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 14px;
+  min-width: 120px;
+}
+
+.kv b {
+  display: block;
+  font-size: 18px;
+}
+
+.kv span {
+  color: var(--mut);
+  font-size: 12px;
+}
+
+/* Pass/fail banner under the recomputed value. */
+.check {
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 12px 0;
+  font-size: 14px;
+}
+
+.check.ok {
+  background: #052e1f;
+  border: 1px solid #14532d;
+  color: #86efac;
+}
+
+.check.bad {
+  background: #3f0d0d;
+  border: 1px solid #7f1d1d;
+  color: #fca5a5;
+}
+
+/* Factor breakdown table in the detail view. */
+.factors {
+  margin-top: 6px;
+}
+
+.factors th {
+  cursor: default;
+}
+
+.factors td:first-child {
+  font-weight: 600;
+}
+
+#back {
+  background: var(--panel);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  margin-top: 16px;
+}
+
+/* ------------------------------------------------------------------
+   12. Footer and small print.
+   ------------------------------------------------------------------ */
+footer {
+  padding: 0 28px 24px;
+  color: var(--mut);
+  font-size: 13px;
+}
+
+.src {
+  color: var(--mut);
+  font-size: 12px;
+}

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!-- Document metadata: charset, responsive viewport, page title, stylesheet. -->
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Token Radar — pre-token protocols ranked by implied launch value</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+
+  <!-- ============================================================
+       Header: title, one-line explainer, and the live stat cards
+       (populated by app.js into #stats).
+       ============================================================ -->
+  <header class="top">
+    <div>
+      <h1>Token Radar</h1>
+      <p class="sub">Every pre-token protocol in the snapshot, ranked by what its launch would be worth — priced by a log-log regression of market cap on TVL, age and 7-day growth over the snapshot's own clean live tokens, with each category's effect shrunk toward the global mean. No coefficient is hardcoded; the fit runs on the snapshot at run time.</p>
+    </div>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <!-- ============================================================
+       View tabs: the board, the live-token comparables, and the
+       method/validation explainer. app.js toggles the sections.
+       ============================================================ -->
+  <nav class="tabs" aria-label="Views">
+    <button id="tab-pre" class="tab active" type="button">Pre-token board</button>
+    <button id="tab-live" class="tab" type="button">Live tokens</button>
+    <button id="tab-method" class="tab" type="button">Method &amp; validation</button>
+  </nav>
+
+  <!-- ============================================================
+       Board controls: free-text search, category and chain filters,
+       watchlist toggle, and the live result count. The same controls
+       filter the live-token view too.
+       ============================================================ -->
+  <section class="controls" id="controls">
+    <input id="q" type="search" placeholder="Search name or slug…" aria-label="Search protocols">
+    <select id="cat" aria-label="Category filter">
+      <option value="">All categories</option>
+    </select>
+    <select id="chain" aria-label="Chain filter">
+      <option value="">All chains</option>
+    </select>
+    <label class="watch">
+      <input id="watchonly" type="checkbox"> Watchlist only
+    </label>
+    <span class="count" id="count"></span>
+  </section>
+
+  <main>
+
+    <!-- ==========================================================
+         Board view (default): top-10 value chart, category offset
+         strip, then the ranked pre-token table. Rows are clickable
+         and open the detail view.
+         ========================================================== -->
+    <section id="view-board">
+      <div class="chart-strip" id="chart-strip">
+        <h2>Top 10 by implied value</h2>
+        <p class="bench-note">The board's head, as horizontal bars — the gap between rank 1 and rank 10 is the model's own spread, not a scale chosen for the picture.</p>
+        <div id="topchart"></div>
+      </div>
+
+      <div class="bench-strip" id="bench-strip">
+        <h2>Category offsets — how each category shifts the regression</h2>
+        <p class="bench-note">Each pre-token protocol is priced by the regression, shifted by its own category's offset. An offset is the category's median log market-cap/TVL ratio minus the global median, shrunk toward zero by n ÷ (n + 5) — categories hold few live tokens, so an unshrunk median is mostly noise. Categories with no live tokens get no offset.</p>
+        <table id="benchmini">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Live tokens</th>
+              <th>Raw median log ratio</th>
+              <th>Offset used</th>
+            </tr>
+          </thead>
+          <tbody id="benchminirows"></tbody>
+        </table>
+      </div>
+
+      <table id="board">
+        <thead>
+          <tr>
+            <th data-sort="rank">Rank</th>
+            <th data-sort="name">Protocol</th>
+            <th data-sort="category">Category</th>
+            <th data-sort="chains">Chains</th>
+            <th data-sort="tvl_usd">TVL</th>
+            <th data-sort="change_7d">7d</th>
+            <th data-sort="age_days">Age</th>
+            <th data-sort="multiple">Multiple</th>
+            <th data-sort="implied_value_usd">Implied value</th>
+            <th data-sort="token_odds">Token odds</th>
+            <th>Farm plan</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+      <p class="hint">Click a row for the detail view — it recomputes the implied value live from the row's own figures and checks it against the board.</p>
+    </section>
+
+    <!-- ==========================================================
+         Live-token view: the comparables the board is valued
+         against, shown at market cap — never at a modelled value.
+         Search and filters above apply here too.
+         ========================================================== -->
+    <section id="view-live" hidden>
+      <table id="livetab">
+        <thead>
+          <tr>
+            <th data-sort="name">Protocol</th>
+            <th data-sort="category">Category</th>
+            <th data-sort="tvl_usd">TVL</th>
+            <th data-sort="mcap_usd">Market cap</th>
+            <th data-sort="ratio">Mcap / TVL</th>
+            <th data-sort="age_days">Age</th>
+          </tr>
+        </thead>
+        <tbody id="liverows"></tbody>
+      </table>
+      <p class="hint">Live-token protocols are shown at their market cap, never at a modelled value. They are the comparables the regression is fit on. Click a column header to sort.</p>
+    </section>
+
+    <!-- ==========================================================
+         Detail view: one protocol, recomputed live. Reached by
+         clicking a board row; #back returns to the board.
+         ========================================================== -->
+    <section id="view-detail" hidden>
+      <button id="back" type="button">← Back to board</button>
+      <div id="detail"></div>
+    </section>
+
+    <!-- ==========================================================
+         Method view: the five valuation steps, the leave-one-out
+         comparison, then the full per-category offset table.
+         ========================================================== -->
+    <section id="view-method" hidden>
+      <h2>How the implied value is built</h2>
+      <p>Each pre-token protocol's implied value comes only from the sealed snapshot's own figures — no outside prices, no hand-kept list of names:</p>
+      <ol class="method">
+        <li><b>Admit.</b> A protocol is rankable when its record shows no token at all (market cap, CoinGecko id and symbol all null) and it is not a wrapped, staked or bridged product, not a versioned pool, and not an exchange. The snapshot's 40-protocol watchlist is the floor; the same rule admits the early protocols below the $50m floor too. The record is not proof: a protocol the record calls pre-token may still have a token its record does not carry, and the board says "records no token", never "has none".</li>
+        <li><b>Fit.</b> Regress ln(market cap) on ln(TVL), ln(age + 30 days) and the 7-day TVL change by least squares over the snapshot's clean live tokens — market cap and TVL above zero, no barred category, no versioned name, market-cap/TVL at most 3 (a version misattribution or a 400× outlier must not set any multiple). The fit runs at run time from the snapshot — no coefficient is hardcoded. On this snapshot ln(mcap) = <span id="ols-intercept"></span> + <span id="ols-slope-tvl"></span> · ln(TVL) + <span id="ols-slope-age"></span> · ln(age + 30) + <span id="ols-slope-growth"></span> · growth, fit on <span id="ols-n"></span> clean tokens, residual sd <span id="ols-sd"></span>, R² = <span id="ols-r2"></span>. The TVL slope is below 1, so the implied multiple falls as TVL rises: a flat multiple would overvalue the largest protocols several times over. Growth and age enter at their fitted coefficients — small, because that is what the snapshot's own figures say.</li>
+        <li><b>Shrink the category offset.</b> For each category, take the median of its live tokens' ln(market cap/TVL), subtract the global median, and shrink it toward zero by n ÷ (n + 5), where n is the category's live-token count. A category with one live token cannot set its own multiple — Risk Curators has exactly one comparable, and its raw ratio would triple every row in it — and a category with none gets no offset. The table below shows every category's raw median log ratio and the shrunken offset the board uses.</li>
+        <li><b>Guard, don't clamp.</b> Implied value = exp(fit + offset). The multiple then passes a wide sanity guard [0.002, 3.0] that binds on no row of this board: the guard is a guard, not the model. No row's value is set by a bound. The detail view shows each number for every protocol, including whether a guard bound.</li>
+        <li><b>Token odds are shown, never priced in.</b> The board carries a token-odds column: the share of protocols in this snapshot whose record carries a token, by age bucket times the protocol's category rate, capped to [0.05, 0.95]. It is a record rate in this cross-section — older protocols and token-heavy categories score higher — not a prediction that a token launches, so it stays out of the implied value. Age runs from the listing date to the snapshot date, 2026-11-14, or the median age of the admitted protocols (<span id="agefallback"></span>) when no listing date is recorded; age feeds the value through its fitted coefficient and the farm plan's hold time.</li>
+        <li><b>Rank.</b> Sort by implied value, highest first. The board is the claim; the snapshot's record is not proof a token will ever launch.</li>
+      </ol>
+      <h3>Leave-one-out — the model against two simpler ones</h3>
+      <p class="bench-note">Each model is refit without the held-out protocol, over the same clean live tokens, so no number here is in-sample. Median |log error| is the typical miss in log points (×2.9 ≈ the prediction is typically within a factor of 2.9); within-2×/3× is the share of predictions inside that factor; bias is the median signed log error.</p>
+      <table id="lootab">
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>Median |log error|</th>
+            <th>Within 2×</th>
+            <th>Within 3×</th>
+            <th>Bias</th>
+          </tr>
+        </thead>
+        <tbody id="loorows"></tbody>
+      </table>
+      <h3>Category offsets — median log ratio, shrunk toward zero</h3>
+      <table id="comps">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Live tokens</th>
+            <th>Raw median log ratio</th>
+            <th>Offset used</th>
+          </tr>
+        </thead>
+        <tbody id="compsrows"></tbody>
+      </table>
+      <p class="hint">The offset is the raw median log ratio minus the global median, shrunk by n ÷ (n + 5). A positive offset lifts every protocol in that category above the regression line; a negative one pulls it below.</p>
+    </section>
+
+  </main>
+
+  <!-- ============================================================
+       Footer: snapshot date and the count of ranked protocols.
+       ============================================================ -->
+  <footer>
+    <p>Snapshot dated <span id="asof"></span> · <span id="footcount"></span> pre-token protocols ranked · values are the entry's own model, not a prediction that a token launches.</p>
+  </footer>
+
+  <!-- Data first, then the app that renders every view above. -->
+  <script src="../data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
